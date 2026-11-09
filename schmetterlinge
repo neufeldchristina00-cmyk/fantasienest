@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fantasienest - 10 Schmetterlinge finden</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body {
+            margin: 0;
+            background-color: #1e272e;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', sans-serif;
+        }
+
+        /* Die 16:9 Wimmelbild-Bühne (exakt passend zu deinem Bild) */
+        #such-buehne {
+            position: relative;
+            width: 1000px;
+            max-width: 96vw;
+            max-height: 78vh;
+            aspect-ratio: 16 / 9;
+            background-size: cover;
+            background-position: center;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        /* Klick-Kreise für die 10 Schmetterlinge */
+        .schmetterling-zone {
+            position: absolute;
+            aspect-ratio: 1 / 1;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            cursor: pointer;
+            background-color: transparent;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        /* Leuchtender Kreis, wenn ein Schmetterling entdeckt wurde */
+        .schmetterling-zone.gefunden {
+            border: 4px solid #00e5ff;
+            background-color: rgba(0, 229, 255, 0.2);
+            box-shadow: 0 0 16px #00e5ff;
+            cursor: default;
+            animation: plopp 0.4s ease;
+        }
+
+        @keyframes plopp {
+            0% { transform: translate(-50%, -50%) scale(0.5); }
+            70% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* Zähler-Leiste unten */
+        #zaehler-leiste {
+            margin-top: 14px;
+            background: rgba(255, 255, 255, 0.94);
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        #zahl {
+            color: #0288d1;
+            font-size: 24px;
+        }
+
+        /* Gewinn-Fenster */
+        #gewonnen-box {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.96);
+            padding: 25px 40px;
+            border-radius: 20px;
+            border: 5px solid #0288d1;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        #gewonnen-box h2 { margin: 0 0 10px 0; color: #333; font-size: 26px; }
+        #gewonnen-box p { margin: 0 0 18px 0; color: #555; font-size: 18px; }
+        #gewonnen-box button {
+            background: #27ae60; color: white; border: none;
+            padding: 12px 24px; font-size: 18px; border-radius: 12px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="such-buehne">
+    <!-- 1. Oben ganz links im Blattwerk -->
+    <div class="schmetterling-zone" style="left: 6.8%; top: 12.8%; width: 6.5%;"></div>
+    
+    <!-- 2. Oben links an der bemoosten Steinsäule -->
+    <div class="schmetterling-zone" style="left: 24.8%; top: 21.5%; width: 6.5%;"></div>
+    
+    <!-- 3. Großer Schmetterling vorne links auf dem Monsterablatt -->
+    <div class="schmetterling-zone" style="left: 17.5%; top: 56.5%; width: 14.5%;"></div>
+    
+    <!-- 4. Unten links auf dem grünen Blatt -->
+    <div class="schmetterling-zone" style="left: 21.2%; top: 79.5%; width: 6.5%;"></div>
+    
+    <!-- 5. Oben in der Mitte im Sonnenstrahl -->
+    <div class="schmetterling-zone" style="left: 47.0%; top: 25.0%; width: 9.0%;"></div>
+    
+    <!-- 6. Kleiner Schmetterling mittig im Torbogen der Ruine -->
+    <div class="schmetterling-zone" style="left: 67.5%; top: 30.8%; width: 6.0%;"></div>
+    
+    <!-- 7. Unten in der Mitte auf dem Felsen am Bach -->
+    <div class="schmetterling-zone" style="left: 65.0%; top: 84.5%; width: 6.5%;"></div>
+    
+    <!-- 8. Rechts auf den Blättern neben dem Wasserfall -->
+    <div class="schmetterling-zone" style="left: 83.2%; top: 34.5%; width: 6.5%;"></div>
+    
+    <!-- 9. Oben ganz rechts auf dem Ast -->
+    <div class="schmetterling-zone" style="left: 94.8%; top: 9.5%; width: 6.5%;"></div>
+    
+    <!-- 10. Großer Schmetterling vorne rechts auf den lila Blüten -->
+    <div class="schmetterling-zone" style="left: 91.5%; top: 70.0%; width: 13.5%;"></div>
+
+    <!-- Gewinn-Fenster -->
+    <div id="gewonnen-box">
+        <h2>Alle gefunden! 🦋✨</h2>
+        <p>Du hast alle 10 blauen Schmetterlinge entdeckt!</p>
+        <button onclick="location.reload()">Nochmal suchen</button>
+    </div>
+</div>
+
+<!-- Zähler unten -->
+<div id="zaehler-leiste">
+    🦋 Gefunden: <span id="zahl">0</span> von 10
+</div>
+
+<script>
+    const buehne = document.getElementById('such-buehne');
+    // Lädt dein Bild immer frisch von GitHub (ohne Cache-Probleme)
+    buehne.style.backgroundImage = `url('images/schmetterlinge.png?t=${Date.now()}')`;
+
+    const zonen = document.querySelectorAll('.schmetterling-zone');
+    const zahlAnzeige = document.getElementById('zahl');
+    let gefunden = 0;
+
+    zonen.forEach(zone => {
+        zone.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (zone.classList.contains('gefunden')) return;
+
+            zone.classList.add('gefunden');
+            gefunden++;
+            zahlAnzeige.textContent = gefunden;
+
+            if (gefunden === 10) {
+                setTimeout(() => {
+                    document.getElementById('gewonnen-box').style.display = 'block';
+                }, 400);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
