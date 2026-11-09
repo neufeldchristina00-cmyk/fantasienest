@@ -178,28 +178,31 @@
     farbCanvas.height = 562;
     const farbCtx = farbCanvas.getContext('2d', { willReadFrequently: true });
 
+    let bildGeladen = false;
     const hintergrundBild = new Image();
     hintergrundBild.crossOrigin = "Anonymous";
     hintergrundBild.src = bildUrl;
     hintergrundBild.onload = () => {
         farbCtx.drawImage(hintergrundBild, 0, 0, 1000, 562);
+        bildGeladen = true;
     };
 
     let maltGerade = false;
     let amStartBegonnen = false;
     let spielFertig = false;
+    let letztePos = null;
     let hinweisTimer;
 
     const startX = 280, startY = 191;
     const zielX = 695, zielY = 421;
     const radius = 45;
 
-    ctx.lineWidth = 14;
+    ctx.lineWidth = 12;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(0, 229, 255, 0.85)';
+    ctx.strokeStyle = 'rgba(0, 229, 255, 0.9)';
     ctx.shadowColor = '#00bcd4';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 8;
 
     function holePosition(e) {
         const rect = canvas.getBoundingClientRect();
@@ -211,21 +214,45 @@
         };
     }
 
-    // Prüft anhand der Farbe, ob der Punkt auf dem hellen Sandweg (oder Pfeil/Brunnen) liegt
+    // Prüft anhand der echten Farbwerte, ob der Punkt auf dem hellen Sandweg liegt
     function istAufDemWeg(x, y) {
+        if (!bildGeladen) return true;
         const px = Math.round(x);
         const py = Math.round(y);
         if (px < 0 || px >= 1000 || py < 0 || py >= 562) return false;
 
+        // Start- und Zielkreis immer erlauben
+        if (Math.hypot(px - startX, py - startY) < radius) return true;
+        if (Math.hypot(px - zielX, py - zielY) < radius) return true;
+
         const pixel = farbCtx.getImageData(px, py, 1, 1).data;
-        const rot = pixel[0];
-        const gruen = pixel[1];
-        const blau = pixel[2];
+        const rot = pixel;
+        const gruen = pixel;
+        const blau = pixel;
 
-        const istSandOderPfeil = (rot > 165 && gruen > 110 && rot > blau + 20);
-        const istBrunnen = (blau > 160 && gruen > 140);
+        // Heller Sandweg und orangener Pfeil (viel Rot & Grün, wenig Blau)
+        const istSand = (rot > 155 && gruen > 115 && rot > blau + 25);
+        // Blauer Kristallbrunnen am Ziel
+        const istBrunnen = (blau > 150 && gruen > 130);
 
-        return istSandOderPfeil || istBrunnen;
+        return istSand || istBrunnen;
+    }
+
+    // Prüft jeden einzelnen Schritt zwischen alter und neuer Mausposition (verhindert Überspringen von Wänden!)
+    function pruefeLinie(vonX, vonY, bisX, bisY) {
+        const distanz = Math.hypot(bisX - vonX, bisY - vonY);
+        const schritte = Math.max(1, Math.ceil(distanz / 2));
+
+        for (let i = 1; i <= schritte; i++) {
+            const t = i / schritte;
+            const testX = vonX + (bisX - vonX) * t;
+            const testY = vonY + (bisY - vonY) * t;
+
+            if (!istAufDemWeg(testX, testY)) {
+                return false; // Wand getroffen!
+            }
+        }
+        return true;
     }
 
     function zeigeWandFehler() {
@@ -244,30 +271,32 @@
         const pos = holePosition(e);
         const abstandStart = Math.hypot(pos.x - startX, pos.y - startY);
         
-        if (abstandStart < radius || istAufDemWeg(pos.x, pos.y)) {
+        if (abstandStart < radius || (amStartBegonnen && istAufDemWeg(pos.x, pos.y))) {
             if (abstandStart < radius) amStartBegonnen = true;
             maltGerade = true;
+            letztePos = pos;
             wandHinweis.style.display = 'none';
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
         }
     });
 
     canvas.addEventListener('pointermove', (e) => {
-        if (!maltGerade || !amStartBegonnen || spielFertig) return;
+        if (!maltGerade || !amStartBegonnen || spielFertig || !letztePos) return;
         const pos = holePosition(e);
 
-        // WAND-BLOCKADE: Stoppt den Strich an der Wand, ohne die bisherige Linie zu löschen
-        if (!istAufDemWeg(pos.x, pos.y)) {
+        // Prüfen, ob die Bewegung eine Wand schneidet
+        if (!pruefeLinie(letztePos.x, letztePos.y, pos.x, pos.y)) {
             zeigeWandFehler();
-            ctx.beginPath();
+            maltGerade = false; // Stoppt den Strich sofort an der Wand!
+            letztePos = null;
             return;
         }
         
+        ctx.beginPath();
+        ctx.moveTo(letztePos.x, letztePos.y);
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
+        
+        letztePos = pos;
 
         // Ziel erreicht?
         const abstandZiel = Math.hypot(pos.x - zielX, pos.y - zielY);
@@ -275,24 +304,20 @@
             spielFertig = true;
             maltGerade = false;
             setTimeout(() => {
-                gewonnenBox.style.display = 'block';
-            }, 300);
-        }
-    });
-
-    canvas.addEventListener('pointerup', (e) => {
-        maltGerade = false;
-        canvas.releasePointerCapture(e.pointerId);
-    });
-
-    function spurLoeschen() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        amStartBegonnen = false;
-        spielFertig = false;
-        wandHinweis.style.display = 'none';
-        gewonnenBox.style.display = 'none';
-    }
-</script>
-
-</body>
-</html>
+gewonnenBox.style.display = 'block';
+}, 300);
+}
+});
+canvas.addEventListener('pointerup', (e) => {
+maltGerade = false;
+letztePos = null;
+canvas.releasePointerCapture(e.pointerId);
+});
+function spurLoeschen() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+amStartBegonnen = false;
+spielFertig = false;
+letztePos = null;
+wandHinweis.style.display = 'none';
+gewonnenBox.style.display = 'none';
+}
