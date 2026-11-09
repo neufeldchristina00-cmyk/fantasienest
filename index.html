@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasienest - Schatten-Rätsel</title>
+    <!-- Phaser Spiel-Engine laden -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body {
+            margin: 0;
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+    const config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 500,
+        scale: {
+            mode: Phaser.Scale.FIT,
+            autoCenter: Phaser.Scale.CENTER_BOTH
+        },
+        scene: { preload: preload, create: create }
+    };
+
+    const game = new Phaser.Game(config);
+    let geloest = 0; // Zählt, wie viele der 4 Schatten richtig zugeordnet wurden
+
+    function preload() {
+        // Deine 9 hochgeladenen Bilder aus dem Ordner "images" laden
+        this.load.image('hintergrund', 'images/hintergrund.png');
+        
+        this.load.image('symbol1', 'images/symbol1.png');
+        this.load.image('symbol2', 'images/symbol2.png');
+        this.load.image('symbol3', 'images/symbol3.png');
+        this.load.image('symbol4', 'images/symbol4.png');
+        
+        this.load.image('schatten1', 'images/schatten1.png');
+        this.load.image('schatten2', 'images/schatten2.png');
+        this.load.image('schatten3', 'images/schatten3.png');
+        this.load.image('schatten4', 'images/schatten4.png');
+    }
+
+    function create() {
+        // 1. Hintergrund auf volle Größe setzen
+        this.add.image(400, 250, 'hintergrund').setDisplaySize(800, 500);
+
+        // 2. Die 4 schwarzen Schatten nebeneinander platzieren (Zielzonen oben)
+        const ziele = [
+            { id: 1, x: 160, y: 170, bild: 'schatten1' },
+            { id: 2, x: 320, y: 170, bild: 'schatten2' },
+            { id: 3, x: 480, y: 170, bild: 'schatten3' },
+            { id: 4, x: 640, y: 170, bild: 'schatten4' }
+        ];
+
+        ziele.forEach(ziel => {
+            let schatten = this.add.image(ziel.x, ziel.y, ziel.bild).setScale(0.45);
+            schatten.setData('id', ziel.id);
+            schatten.setInteractive();
+            schatten.input.dropZone = true;
+        });
+
+        // 3. Die 4 bunten Symbole unten in gemischter Reihenfolge platzieren
+        const symbole = [
+            { id: 3, x: 160, y: 400, bild: 'symbol3' },
+            { id: 1, x: 320, y: 400, bild: 'symbol1' },
+            { id: 4, x: 480, y: 400, bild: 'symbol4' },
+            { id: 2, x: 640, y: 400, bild: 'symbol2' }
+        ];
+
+        symbole.forEach(sym => {
+            let karte = this.add.image(sym.x, sym.y, sym.bild).setScale(0.45).setInteractive();
+            karte.setData('id', sym.id);
+            karte.setData('startX', sym.x);
+            karte.setData('startY', sym.y);
+            this.input.setDraggable(karte);
+        });
+
+        // 4. Ziehen mit Maus oder Finger
+        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+            gameObject.x = dragX;
+            gameObject.y = dragY;
+            this.children.bringToTop(gameObject);
+        });
+
+        // 5. Prüfen, ob das Symbol auf dem richtigen Schatten losgelassen wurde
+        this.input.on('drop', (pointer, gameObject, dropZone) => {
+            if (gameObject.getData('id') === dropZone.getData('id')) {
+                gameObject.x = dropZone.x;
+                gameObject.y = dropZone.y;
+                gameObject.disableInteractive();
+                dropZone.setVisible(false);
+                
+                geloest++;
+                if (geloest === 4) {
+                    setTimeout(() => {
+                        alert("Klasse gemacht! Alle 4 Schatten gefunden! 🌟");
+                    }, 300);
+                }
+            } else {
+                gameObject.x = gameObject.getData('startX');
+                gameObject.y = gameObject.getData('startY');
+            }
+        });
+
+        // 6. Wenn komplett daneben losgelassen -> zurück zum Startplatz
+        this.input.on('dragend', (pointer, gameObject, dropped) => {
+            if (!dropped) {
+                gameObject.x = gameObject.getData('startX');
+                gameObject.y = gameObject.getData('startY');
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
