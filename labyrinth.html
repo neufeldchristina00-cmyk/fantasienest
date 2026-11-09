@@ -71,6 +71,24 @@
             50% { transform: translate(-50%, -50%) scale(1.15); }
         }
 
+        /* Hinweis-Blase bei Wand-Berührung */
+        #wand-hinweis {
+            display: none;
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(231, 76, 60, 0.95);
+            color: white;
+            padding: 12px 26px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 50;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+
         /* Steuerungsleiste unten */
         #steuer-leiste {
             margin-top: 12px;
@@ -120,12 +138,17 @@
 <body>
 
 <div id="labyrinth-buehne">
-    <!-- Pulsierende Ringe exakt auf deinen beiden Pfeilen! -->
+    <!-- Pulsierende Ringe exakt auf deinen beiden Pfeilen -->
     <div id="start-punkt" class="punkt-markierung" style="left: 28.0%; top: 34.0%;"></div>
     <div id="ziel-punkt" class="punkt-markierung" style="left: 69.5%; top: 75.0%;"></div>
 
-    <!-- Unsichtbare Leinwand zum Zeichnen der Linie -->
+    <!-- Sichtbare Zeichenfläche -->
     <canvas id="zeichen-flaeche" width="1000" height="562"></canvas>
+
+    <!-- Warnhinweis bei Wandkontakt -->
+    <div id="wand-hinweis">
+        Hoppla! Hier ist eine Wand – bleib auf dem hellen Steinweg! 🌿🦊
+    </div>
 
     <!-- Gewinn-Fenster -->
     <div id="gewonnen-box">
@@ -141,23 +164,36 @@
 
 <script>
     const buehne = document.getElementById('labyrinth-buehne');
-    // Bild immer frisch laden
-    buehne.style.backgroundImage = `url('images/labyrinth.png?t=${Date.now()}')`;
+    const bildUrl = `images/labyrinth.png?t=${Date.now()}`;
+    buehne.style.backgroundImage = `url('${bildUrl}')`;
 
     const canvas = document.getElementById('zeichen-flaeche');
     const ctx = canvas.getContext('2d');
     const gewonnenBox = document.getElementById('gewonnen-box');
+    const wandHinweis = document.getElementById('wand-hinweis');
+
+    // Unsichtbare Kopie des Bildes im Hintergrund zum Prüfen der Weg-Farben
+    const farbCanvas = document.createElement('canvas');
+    farbCanvas.width = 1000;
+    farbCanvas.height = 562;
+    const farbCtx = farbCanvas.getContext('2d', { willReadFrequently: true });
+
+    const hintergrundBild = new Image();
+    hintergrundBild.crossOrigin = "Anonymous";
+    hintergrundBild.src = bildUrl;
+    hintergrundBild.onload = () => {
+        farbCtx.drawImage(hintergrundBild, 0, 0, 1000, 562);
+    };
 
     let maltGerade = false;
     let amStartBegonnen = false;
     let spielFertig = false;
+    let hinweisTimer;
 
-    // Exakte Koordinaten auf der 1000x562 Leinwand (passend zu deinen beiden Pfeilen)
-    const startX = 280, startY = 191; // Pfeil bei Flips (28.0%, 34.0%)
-    const zielX = 695, zielY = 421;   // Pfeil am Brunnen (69.5%, 75.0%)
-    const radius = 42;
+    const startX = 280, startY = 191;
+    const zielX = 695, zielY = 421;
+    const radius = 45;
 
-    // Linie hübsch gestalten (leuchtend blau wie der Kristall)
     ctx.lineWidth = 14;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -175,40 +211,72 @@
         };
     }
 
+    // Prüft anhand der Farbe, ob der Punkt auf dem hellen Sandweg (oder Pfeil/Brunnen) liegt
+    function istAufDemWeg(x, y) {
+        const px = Math.round(x);
+        const py = Math.round(y);
+        if (px < 0 || px >= 1000 || py < 0 || py >= 562) return false;
+
+        const pixel = farbCtx.getImageData(px, py, 1, 1).data;
+        const rot = pixel[0];
+        const gruen = pixel[1];
+        const blau = pixel[2];
+
+        const istSandOderPfeil = (rot > 165 && gruen > 110 && rot > blau + 20);
+        const istBrunnen = (blau > 160 && gruen > 140);
+
+        return istSandOderPfeil || istBrunnen;
+    }
+
+    function zeigeWandFehler() {
+        wandHinweis.style.display = 'block';
+        clearTimeout(hinweisTimer);
+        hinweisTimer = setTimeout(() => {
+            wandHinweis.style.display = 'none';
+        }, 1800);
+    }
+
     canvas.addEventListener('pointerdown', (e) => {
         if (spielFertig) return;
         e.preventDefault();
         canvas.setPointerCapture(e.pointerId);
         
         const pos = holePosition(e);
-        // Prüfen, ob das Kind beim Startpfeil (Flips) ansetzt
         const abstandStart = Math.hypot(pos.x - startX, pos.y - startY);
-        if (abstandStart < radius) {
-            amStartBegonnen = true;
+        
+        if (abstandStart < radius || istAufDemWeg(pos.x, pos.y)) {
+            if (abstandStart < radius) amStartBegonnen = true;
+            maltGerade = true;
+            wandHinweis.style.display = 'none';
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
         }
-
-        maltGerade = true;
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
     });
 
     canvas.addEventListener('pointermove', (e) => {
-        if (!maltGerade || spielFertig) return;
+        if (!maltGerade || !amStartBegonnen || spielFertig) return;
         const pos = holePosition(e);
+
+        // WAND-BLOCKADE: Stoppt den Strich an der Wand, ohne die bisherige Linie zu löschen
+        if (!istAufDemWeg(pos.x, pos.y)) {
+            zeigeWandFehler();
+            ctx.beginPath();
+            return;
+        }
         
         ctx.lineTo(pos.x, pos.y);
         ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
 
-        // Prüfen, ob das Ziel (Kristallbrunnen) erreicht wurde
-        if (amStartBegonnen) {
-            const abstandZiel = Math.hypot(pos.x - zielX, pos.y - zielY);
-            if (abstandZiel < radius) {
-                spielFertig = true;
-                maltGerade = false;
-                setTimeout(() => {
-                    gewonnenBox.style.display = 'block';
-                }, 300);
-            }
+        // Ziel erreicht?
+        const abstandZiel = Math.hypot(pos.x - zielX, pos.y - zielY);
+        if (abstandZiel < radius) {
+            spielFertig = true;
+            maltGerade = false;
+            setTimeout(() => {
+                gewonnenBox.style.display = 'block';
+            }, 300);
         }
     });
 
@@ -221,6 +289,7 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         amStartBegonnen = false;
         spielFertig = false;
+        wandHinweis.style.display = 'none';
         gewonnenBox.style.display = 'none';
     }
 </script>
