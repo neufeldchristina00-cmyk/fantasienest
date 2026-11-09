@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fantasienest - Welcher Weg ist richtig?</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body {
+            margin: 0;
+            background-color: #1e272e;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', sans-serif;
+        }
+
+        /* Die 16:9 Bühne */
+        #weg-buehne {
+            position: relative;
+            width: 1000px;
+            max-width: 96vw;
+            max-height: 80vh;
+            aspect-ratio: 16 / 9;
+            background-size: cover;
+            background-position: center;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        /* Klickbare Zonen für die verschiedenen Wege */
+        .weg-zone {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            border-radius: 20px;
+            cursor: pointer;
+            background-color: transparent;
+            transition: transform 0.2s;
+        }
+
+        .weg-zone:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+
+        /* Hinweis-Blase bei falschem Weg */
+        #hinweis-box {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(231, 76, 60, 0.95);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 30px;
+            font-size: 19px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 50;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+            animation: wackeln 0.4s ease;
+        }
+
+        @keyframes wackeln {
+            0%, 100% { transform: translateX(-50%); }
+            25% { transform: translateX(calc(-50% - 10px)); }
+            75% { transform: translateX(calc(-50% + 10px)); }
+        }
+
+        /* Erfolgs-Fenster bei richtigem Weg */
+        #gewonnen-box {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.96);
+            padding: 25px 40px;
+            border-radius: 20px;
+            border: 5px solid #27ae60;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        #gewonnen-box h2 { margin: 0 0 10px 0; color: #333; font-size: 26px; }
+        #gewonnen-box p { margin: 0 0 18px 0; color: #555; font-size: 18px; }
+        #gewonnen-box button {
+            background: #27ae60; color: white; border: none;
+            padding: 12px 24px; font-size: 18px; border-radius: 12px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="weg-buehne">
+    <!-- WEG 1: Links über die kleine Holzbrücke (Falscher Weg) -->
+    <div class="weg-zone" data-richtig="false" style="left: 44.0%; top: 48.0%; width: 16%; height: 32%;"></div>
+    
+    <!-- WEG 2: Mitte die Steintreppe hoch zur Schmetterlings-Säule (Richtiger Weg!) -->
+    <div class="weg-zone" data-richtig="true" style="left: 62.5%; top: 38.0%; width: 16%; height: 48%;"></div>
+    
+    <!-- WEG 3: Rechts durch den grünen Rankentunnel (Falscher Weg) -->
+    <div class="weg-zone" data-richtig="false" style="left: 82.0%; top: 48.0%; width: 18%; height: 35%;"></div>
+
+    <!-- Hinweis bei falschem Weg -->
+    <div id="hinweis-box">
+        Ups! Schau genau hin: Wo ist der Schmetterling auf der Steinsäule? 🦋🔍
+    </div>
+
+    <!-- Gewinn-Fenster bei richtigem Weg -->
+    <div id="gewonnen-box">
+        <h2>Richtiger Weg! 🦋✨</h2>
+        <p>Du hast die Steinsäule mit dem Schmetterling entdeckt!</p>
+        <button onclick="location.reload()">Weitergehen ➡️</button>
+    </div>
+</div>
+
+<script>
+    const buehne = document.getElementById('weg-buehne');
+    // Bild immer frisch laden (ohne Cache-Probleme)
+    buehne.style.backgroundImage = `url('images/wege.png?t=${Date.now()}')`;
+
+    const wege = document.querySelectorAll('.weg-zone');
+    const hinweisBox = document.getElementById('hinweis-box');
+    const gewonnenBox = document.getElementById('gewonnen-box');
+    let hinweisTimer;
+
+    wege.forEach(weg => {
+        weg.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            
+            if (weg.dataset.richtig === 'true') {
+                hinweisBox.style.display = 'none';
+                gewonnenBox.style.display = 'block';
+            } else {
+                hinweisBox.style.display = 'none';
+                void hinweisBox.offsetWidth;
+                hinweisBox.style.display = 'block';
+
+                clearTimeout(hinweisTimer);
+                hinweisTimer = setTimeout(() => {
+                    hinweisBox.style.display = 'none';
+                }, 3000);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
