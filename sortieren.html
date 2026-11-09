@@ -1,1 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fantasienest - Symbole zuordnen</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body {
+            margin: 0;
+            background-color: #1e272e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', sans-serif;
+        }
+
+        /* Die 16:9 Bühne */
+        #sortier-buehne {
+            position: relative;
+            width: 1000px;
+            max-width: 98vw;
+            aspect-ratio: 16 / 9;
+            background-size: cover;
+            background-position: center;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        /* Die 3 Ziel-Sockel in der Mitte (mit gestricheltem Rahmen auf deinem Bild) */
+        .ziel-sockel {
+            position: absolute;
+            width: 8.5%;
+            aspect-ratio: 1 / 1;
+            transform: translate(-50%, -50%);
+            border-radius: 10px;
+        }
+
+        /* Die 3 ziehbaren Symbole aus der unteren Leiste */
+        .zieh-symbol {
+            position: absolute;
+            width: 8.5%;
+            aspect-ratio: 1 / 1;
+            transform: translate(-50%, -50%);
+            object-fit: contain;
+            cursor: grab;
+            touch-action: none;
+            z-index: 10;
+        }
+
+        .zieh-symbol:active {
+            cursor: grabbing;
+        }
+
+        /* Gewinn-Fenster */
+        #gewonnen-box {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.96);
+            padding: 25px 40px;
+            border-radius: 20px;
+            border: 5px solid #f39c12;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        #gewonnen-box h2 { margin: 0 0 10px 0; color: #333; font-size: 26px; }
+        #gewonnen-box p { margin: 0 0 18px 0; color: #555; font-size: 18px; }
+        #gewonnen-box button {
+            background: #27ae60; color: white; border: none;
+            padding: 12px 24px; font-size: 18px; border-radius: 12px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="sortier-buehne">
+    <!-- 1. DIE 3 ZIEL-SOCKEL IN DER MITTE (Exakt auf den 3 gestrichelten Feldern!) -->
+    <!-- Links unter dem großen Berg -->
+    <div class="ziel-sockel" data-typ="berg" style="left: 37.8%; top: 63.5%;"></div>
+    <!-- Mitte unter der großen Pflanze -->
+    <div class="ziel-sockel" data-typ="pflanze" style="left: 50.8%; top: 63.5%;"></div>
+    <!-- Rechts unter den großen Wellen -->
+    <div class="ziel-sockel" data-typ="wellen" style="left: 63.8%; top: 63.5%;"></div>
+
+    <!-- 2. DIE 3 ZIEHBAREN SYMBOLE UNTEN (Exakt in der unteren Steinleiste!) -->
+    <img src="images/kachel-pflanze.png" class="zieh-symbol" data-typ="pflanze" draggable="false" style="left: 38.6%; top: 87.5%;">
+    <img src="images/kachel-wellen.png" class="zieh-symbol" data-typ="wellen" draggable="false" style="left: 50.8%; top: 87.5%;">
+    <img src="images/kachel-berg.png" class="zieh-symbol" data-typ="berg" draggable="false" style="left: 63.0%; top: 87.5%;">
+
+    <!-- Gewinn-Fenster -->
+    <div id="gewonnen-box">
+        <h2>Perfekt sortiert! 🌟🏛️</h2>
+        <p>Alle 3 Symbole stehen auf dem richtigen Steinsockel!</p>
+        <button onclick="location.reload()">Nochmal spielen</button>
+    </div>
+</div>
+
+<script>
+    // Hintergrundbild immer frisch laden (ohne Cache-Probleme)
+    document.getElementById('sortier-buehne').style.backgroundImage = `url('images/sortieren-hintergrund.png?t=${Date.now()}')`;
+
+    const symbole = document.querySelectorAll('.zieh-symbol');
+    const sockelListe = document.querySelectorAll('.ziel-sockel');
+    let geloest = 0;
+
+    symbole.forEach(symbol => {
+        let startMausX = 0, startMausY = 0;
+        let ziehtGerade = false;
+
+        symbol.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (symbol.dataset.fertig === 'true') return;
+            
+            ziehtGerade = true;
+            symbol.setPointerCapture(e.pointerId);
+            startMausX = e.clientX;
+            startMausY = e.clientY;
+            symbol.style.zIndex = 50;
+            symbol.style.transition = 'none';
+        });
+
+        symbol.addEventListener('pointermove', (e) => {
+            if (!ziehtGerade) return;
+            const dx = e.clientX - startMausX;
+            const dy = e.clientY - startMausY;
+            symbol.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.15)`;
+        });
+
+        symbol.addEventListener('pointerup', (e) => {
+            if (!ziehtGerade) return;
+            ziehtGerade = false;
+            symbol.releasePointerCapture(e.pointerId);
+
+            const symRect = symbol.getBoundingClientRect();
+            const symMitteX = symRect.left + symRect.width / 2;
+            const symMitteY = symRect.top + symRect.height / 2;
+
+            let treffer = false;
+
+            sockelListe.forEach(sockel => {
+                if (sockel.dataset.typ === symbol.dataset.typ) {
+                    const sockelRect = sockel.getBoundingClientRect();
+                    const toleranz = 18;
+                    if (
+                        symMitteX > (sockelRect.left - toleranz) &&
+                        symMitteX < (sockelRect.right + toleranz) &&
+                        symMitteY > (sockelRect.top - toleranz) &&
+                        symMitteY < (sockelRect.bottom + toleranz)
+                    ) {
+                        treffer = true;
+                        // Symbol exakt in den passenden Steinsockel setzen
+                        symbol.style.left = sockel.style.left;
+                        symbol.style.top = sockel.style.top;
+                        symbol.style.transform = 'translate(-50%, -50%)';
+                        symbol.style.cursor = 'default';
+                        symbol.style.zIndex = 5;
+                        symbol.dataset.fertig = 'true';
+
+                        geloest++;
+                        if (geloest === 3) {
+                            setTimeout(() => {
+                                document.getElementById('gewonnen-box').style.display = 'block';
+                            }, 350);
+                        }
+                    }
+                }
+            });
+
+            if (!treffer) {
+                symbol.style.transition = 'transform 0.3s ease';
+                symbol.style.transform = 'translate(-50%, -50%)';
+                symbol.style.zIndex = 10;
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
 
