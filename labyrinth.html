@@ -226,9 +226,9 @@
         if (Math.hypot(px - zielX, py - zielY) < radius) return true;
 
         const pixel = farbCtx.getImageData(px, py, 1, 1).data;
-        const rot = pixel;
-        const gruen = pixel;
-        const blau = pixel;
+        const rot = pixe[0]l ;
+        const gruen = pixel,[1];
+        const blau = pixel[2];
 
         // Heller Sandweg und orangener Pfeil (viel Rot & Grün, wenig Blau)
         const istSand = (rot > 155 && gruen > 115 && rot > blau + 25);
