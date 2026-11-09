@@ -18,12 +18,13 @@
             font-family: 'Comic Sans MS', sans-serif;
         }
 
-        /* Die 16:9 Schatzkarte */
+        /* Die Schatzkarte im exakten 3:2 Format */
         #karte-buehne {
             position: relative;
-            width: 1000px;
-            max-width: 98vw;
-            aspect-ratio: 16 / 9;
+            width: 900px;
+            max-width: 96vw;
+            max-height: 78vh;
+            aspect-ratio: 3 / 2;
             background-size: cover;
             background-position: center;
             border-radius: 16px;
@@ -34,12 +35,10 @@
         /* Unsichtbare Klick-Felder über den 3 versteckten Objekten */
         .such-zone {
             position: absolute;
-            width: 10%;
             aspect-ratio: 1 / 1;
             transform: translate(-50%, -50%);
             border-radius: 50%;
             cursor: pointer;
-            /* TIPP ZUM EINRICHTEN: Ändere transparent auf rgba(255,0,0,0.4), um die 3 Kreise kurz sichtbar zu machen! */
             background-color: transparent;
             border: 4px solid transparent;
             transition: all 0.3s ease;
@@ -62,13 +61,13 @@
 
         /* Such-Leiste unten mit den 3 gesuchten Begriffen */
         #such-liste {
-            margin-top: 12px;
-            background: rgba(255, 255, 255, 0.92);
-            padding: 10px 25px;
+            margin-top: 14px;
+            background: rgba(255, 255, 255, 0.94);
+            padding: 10px 28px;
             border-radius: 30px;
             display: flex;
-            gap: 25px;
-            font-size: 18px;
+            gap: 28px;
+            font-size: 19px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             flex-wrap: wrap;
             justify-content: center;
@@ -104,34 +103,38 @@
         }
 
         #gewonnen-box h2 { margin: 0 0 10px 0; color: #333; font-size: 26px; }
+        #gewonnen-box p { margin: 0 0 18px 0; color: #555; font-size: 18px; }
         #gewonnen-box button {
             background: #27ae60; color: white; border: none;
             padding: 12px 24px; font-size: 18px; border-radius: 12px; cursor: pointer;
-            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
 <div id="karte-buehne">
-    <!-- DIE 3 VERSTECKTEN SUCHZONEN (Positionen left und top in % anpassen!) -->
-    <div class="such-zone" data-ziel="wort1" style="left: 25%; top: 35%;"></div>
-    <div class="such-zone" data-ziel="wort2" style="left: 55%; top: 50%;"></div>
-    <div class="such-zone" data-ziel="wort3" style="left: 80%; top: 65%;"></div>
+    <!-- 1. DIE PALME (Links auf der Karte) -->
+    <div class="such-zone" data-ziel="wort1" style="left: 25.0%; top: 55.5%; width: 9%;"></div>
+    
+    <!-- 2. DER GROSSE STEIN IM FLUSS (Unten in der Flussbiegung) -->
+    <div class="such-zone" data-ziel="wort2" style="left: 44.8%; top: 61.5%; width: 8%;"></div>
+    
+    <!-- 3. DIE RUINE (Rechts oben unter den Bergen) -->
+    <div class="such-zone" data-ziel="wort3" style="left: 71.0%; top: 41.0%; width: 15%;"></div>
 
     <!-- Gewinn-Fenster -->
     <div id="gewonnen-box">
         <h2>Schatz gefunden! 🗺️💎</h2>
-        <p>Du hast alle 3 Hinweise auf der Karte entdeckt!</p>
+        <p>Du hast die Palme, den Flussstein und die Ruine entdeckt!</p>
         <button onclick="location.reload()">Nochmal suchen</button>
     </div>
 </div>
 
-<!-- Such-Leiste unter der Karte mit deinen 3 Begriffen -->
+<!-- Such-Leiste unter der Karte -->
 <div id="such-liste">
-    <span class="such-wort" id="wort1"> Palme</span>
-    <span class="such-wort" id="wort2"> Stein im Fluss</span>
-    <span class="such-wort" id="wort3"> Ruine</span>
+    <span class="such-wort" id="wort1">🌴 Die Palme</span>
+    <span class="such-wort" id="wort2">🪨 Stein im Fluss</span>
+    <span class="such-wort" id="wort3">🏛️ Die Ruine</span>
 </div>
 
 <script>
@@ -146,10 +149,10 @@
             e.preventDefault();
             if (zone.classList.contains('gefunden')) return;
 
-            // 1. Kreis auf der Karte sichtbar machen
+            // 1. Leuchtenden Kreis auf der Karte anzeigen
             zone.classList.add('gefunden');
 
-            // 2. Passendes Wort in der unteren Leiste abhaken
+            // 2. Passendes Wort unten durchstreichen
             const zielId = zone.dataset.ziel;
             document.getElementById(zielId).classList.add('abgehakt');
 
