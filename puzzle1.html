@@ -1,1 +1,231 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fantasienest - 6-Teile-Puzzle</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body {
+            margin: 0;
+            background-color: #1e272e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Comic Sans MS', sans-serif;
+        }
+
+        /* Die 16:9 Bühne mit deinem Hintergrundbild */
+        #spiel-buehne {
+            position: relative;
+            width: 1000px;
+            max-width: 98vw;
+            aspect-ratio: 16 / 9;
+            background-size: cover;
+            background-position: center;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Das 3x2 Puzzle-Brett */
+        #puzzle-brett {
+            position: relative;
+            width: 48%;
+            aspect-ratio: 3 / 2;
+            background-color: rgba(0, 0, 0, 0.35);
+            border: 3px dashed #f39c12;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            margin-top: 2%;
+        }
+
+        .puzzle-slot {
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            position: relative;
+        }
+
+        /* Ablagefläche unten für die 6 gemischten Teile */
+        #teile-ablage {
+            margin-top: 3%;
+            width: 85%;
+            height: 20%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .puzzle-teil {
+            height: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+            cursor: grab;
+            touch-action: none;
+            z-index: 10;
+            background-repeat: no-repeat;
+        }
+
+        .puzzle-teil:active { cursor: grabbing; }
+
+        /* Gewinn-Fenster */
+        #gewonnen-box {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.96);
+            padding: 25px 40px;
+            border-radius: 20px;
+            border: 5px solid #f39c12;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+
+        #gewonnen-box h2 { margin: 0 0 10px 0; color: #333; font-size: 26px; }
+        #gewonnen-box button {
+            background: #27ae60; color: white; border: none;
+            padding: 12px 24px; font-size: 18px; border-radius: 12px; cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="spiel-buehne">
+    <div id="puzzle-brett"></div>
+    <div id="teile-ablage"></div>
+
+    <div id="gewonnen-box">
+        <h2>Puzzle fertig! 🧩🌟</h2>
+        <p>Alle 6 Teile sind am richtigen Platz!</p>
+        <button onclick="location.reload()">Nochmal puzzeln</button>
+    </div>
+</div>
+
+<script>
+    // Beide Bilder immer frisch laden (ohne Cache-Probleme)
+    document.getElementById('spiel-buehne').style.backgroundImage = `url('images/puzzle-hintergrund.png?t=${Date.now()}')`;
+    const bildUrl = `images/puzzlebild.png?t=${Date.now()}`;
+
+    const brett = document.getElementById('puzzle-brett');
+    const ablage = document.getElementById('teile-ablage');
+    const spalten = 3;
+    const reihen = 2;
+    let geloest = 0;
+    let teileListe = [];
+
+    for (let r = 0; r < reihen; r++) {
+        for (let s = 0; s < spalten; s++) {
+            const index = r * spalten + s;
+
+            const slot = document.createElement('div');
+            slot.classList.add('puzzle-slot');
+            slot.dataset.index = index;
+            brett.appendChild(slot);
+
+            const teil = document.createElement('div');
+            teil.classList.add('puzzle-teil');
+            teil.dataset.index = index;
+            teil.style.backgroundImage = `url('${bildUrl}')`;
+            teil.style.backgroundSize = `${spalten * 100}% ${reihen * 100}%`;
+            teil.style.backgroundPosition = `${(s / (spalten - 1)) * 100}% ${(r / (reihen - 1)) * 100}%`;
+
+            teileListe.push(teil);
+        }
+    }
+
+    teileListe.sort(() => Math.random() - 0.5);
+    teileListe.forEach(teil => {
+        ablage.appendChild(teil);
+        dragAktivieren(teil);
+    });
+
+    function dragAktivieren(teil) {
+        let startX = 0, startY = 0;
+        let ziehtGerade = false;
+
+        teil.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            if (teil.dataset.fertig === 'true') return;
+
+            ziehtGerade = true;
+            teil.setPointerCapture(e.pointerId);
+            startX = e.clientX;
+            startY = e.clientY;
+            teil.style.zIndex = 50;
+            teil.style.transition = 'none';
+        });
+
+        teil.addEventListener('pointermove', (e) => {
+            if (!ziehtGerade) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            teil.style.transform = `translate(${dx}px, ${dy}px) scale(1.15)`;
+        });
+
+        teil.addEventListener('pointerup', (e) => {
+            if (!ziehtGerade) return;
+            ziehtGerade = false;
+            teil.releasePointerCapture(e.pointerId);
+
+            const teilRect = teil.getBoundingClientRect();
+            const mitteX = teilRect.left + teilRect.width / 2;
+            const mitteY = teilRect.top + teilRect.height / 2;
+
+            let treffer = false;
+            const slots = document.querySelectorAll('.puzzle-slot');
+
+            slots.forEach(slot => {
+                if (slot.dataset.index === teil.dataset.index) {
+                    const slotRect = slot.getBoundingClientRect();
+                    if (
+                        mitteX > slotRect.left &&
+                        mitteX < slotRect.right &&
+                        mitteY > slotRect.top &&
+                        mitteY < slotRect.bottom
+                    ) {
+                        treffer = true;
+                        teil.style.transform = 'none';
+                        teil.style.width = '100%';
+                        teil.style.height = '100%';
+                        teil.style.borderRadius = '0';
+                        teil.style.boxShadow = 'none';
+                        teil.style.cursor = 'default';
+                        teil.style.zIndex = 1;
+                        teil.dataset.fertig = 'true';
+                        slot.appendChild(teil);
+
+                        geloest++;
+                        if (geloest === 6) {
+                            setTimeout(() => {
+                                document.getElementById('gewonnen-box').style.display = 'block';
+                            }, 350);
+                        }
+                    }
+                }
+            });
+
+            if (!treffer) {
+                teil.style.transition = 'transform 0.3s ease';
+                teil.style.transform = 'translate(0px, 0px)';
+                teil.style.zIndex = 10;
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
 
