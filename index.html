@@ -8,7 +8,7 @@
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body {
             margin: 0;
-            background-color: #2c3e50;
+            background-color: #1e272e;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -19,44 +19,22 @@
 
         #spiel-buehne {
             position: relative;
-            width: 900px;
+            width: 1000px;
             max-width: 98vw;
-            aspect-ratio: 16 / 10;
-            background-image: url('images/hintergrund.png');
+            aspect-ratio: 16 / 9;
             background-size: cover;
             background-position: center;
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             overflow: hidden;
         }
 
-        /* Reihe der 4 Schatten oben */
-        #schatten-reihe {
+        /* Die 4 Schatten in der großen Steintafel */
+        .slot {
             position: absolute;
-            top: 12%;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 0 4%;
-        }
-
-        /* Reihe der 4 bunten Symbole unten */
-        #symbol-reihe {
-            position: absolute;
-            bottom: 8%;
-            left: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 0 4%;
-        }
-
-        .slot, .karte-platz {
-            width: 18%;
+            width: 8.5%;
             aspect-ratio: 1 / 1;
+            transform: translate(-50%, -50%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -69,19 +47,20 @@
             pointer-events: none;
         }
 
+        /* Die 4 bunten Symbole in den 4 Stein-Kacheln darunter */
         .symbol-bild {
-            width: 100%;
-            height: 100%;
+            position: absolute;
+            width: 7.5%;
+            aspect-ratio: 1 / 1;
+            transform: translate(-50%, -50%);
             object-fit: contain;
             cursor: grab;
             touch-action: none;
-            transition: transform 0.15s;
             z-index: 10;
         }
 
         .symbol-bild:active {
             cursor: grabbing;
-            transform: scale(1.1);
         }
 
         /* Erfolgs-Nachricht am Ende */
@@ -91,18 +70,19 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px 40px;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 25px 40px;
             border-radius: 20px;
-            border: 5px solid #ffcc00;
+            border: 5px solid #f39c12;
             text-align: center;
             z-index: 100;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        #gewonnen-box h2 { margin: 0 0 15px 0; color: #333; font-size: 28px; }
+        #gewonnen-box h2 { margin: 0 0 10px 0; color: #333; font-size: 26px; }
+        #gewonnen-box p { margin: 0 0 20px 0; color: #555; font-size: 18px; }
         #gewonnen-box button {
-            background: #4caf50; color: white; border: none;
+            background: #27ae60; color: white; border: none;
             padding: 12px 24px; font-size: 18px; border-radius: 12px; cursor: pointer;
         }
     </style>
@@ -110,59 +90,65 @@
 <body>
 
 <div id="spiel-buehne">
-    <!-- Obere Reihe: Die 4 Schatten -->
-    <div id="schatten-reihe">
-        <div class="slot" data-id="1"><img src="images/schatten1.png" class="schatten-bild"></div>
-        <div class="slot" data-id="2"><img src="images/schatten2.png" class="schatten-bild"></div>
-        <div class="slot" data-id="3"><img src="images/schatten3.png" class="schatten-bild"></div>
-        <div class="slot" data-id="4"><img src="images/schatten4.png" class="schatten-bild"></div>
+    <!-- 1. DIE 4 SCHATTEN (Exakt in der großen Steintafel platziert) -->
+    <div class="slot" data-id="1" style="left: 41.2%; top: 58.0%;">
+        <img src="images/schatten1.png" class="schatten-bild" draggable="false">
+    </div>
+    <div class="slot" data-id="2" style="left: 51.2%; top: 58.0%;">
+        <img src="images/schatten2.png" class="schatten-bild" draggable="false">
+    </div>
+    <div class="slot" data-id="3" style="left: 61.2%; top: 58.0%;">
+        <img src="images/schatten3.png" class="schatten-bild" draggable="false">
+    </div>
+    <div class="slot" data-id="4" style="left: 71.2%; top: 58.0%;">
+        <img src="images/schatten4.png" class="schatten-bild" draggable="false">
     </div>
 
-    <!-- Untere Reihe: Die 4 bunten Symbole (gemischt) -->
-    <div id="symbol-reihe">
-        <div class="karte-platz"><img src="images/symbol3.png" class="symbol-bild" data-id="3"></div>
-        <div class="karte-platz"><img src="images/symbol1.png" class="symbol-bild" data-id="1"></div>
-        <div class="karte-platz"><img src="images/symbol4.png" class="symbol-bild" data-id="4"></div>
-        <div class="karte-platz"><img src="images/symbol2.png" class="symbol-bild" data-id="2"></div>
-    </div>
+    <!-- 2. DIE 4 BUNTEN SYMBOLE (Exakt in den 4 Stein-Kacheln darunter) -->
+    <img src="images/symbol3.png" class="symbol-bild" data-id="3" draggable="false" style="left: 43.2%; top: 80.5%;">
+    <img src="images/symbol1.png" class="symbol-bild" data-id="1" draggable="false" style="left: 51.7%; top: 80.5%;">
+    <img src="images/symbol4.png" class="symbol-bild" data-id="4" draggable="false" style="left: 60.2%; top: 80.5%;">
+    <img src="images/symbol2.png" class="symbol-bild" data-id="2" draggable="false" style="left: 68.7%; top: 80.5%;">
 
     <!-- Gewinn-Fenster -->
     <div id="gewonnen-box">
-        <h2>Super gemacht! 🌟</h2>
-        <p>Du hast alle 4 Schatten gefunden!</p>
+        <h2>Rätsel gelöst! 🌟</h2>
+        <p>Das Steintor öffnet sich! Alle 4 Schatten passen.</p>
         <button onclick="location.reload()">Nochmal spielen</button>
     </div>
 </div>
 
 <script>
+    // Lädt das Hintergrundbild immer garantiert frisch von GitHub (ohne Cache-Probleme)
+    document.getElementById('spiel-buehne').style.backgroundImage = `url('images/hintergrund.png?t=${Date.now()}')`;
+
     const symbole = document.querySelectorAll('.symbol-bild');
     const schattenSlots = document.querySelectorAll('.slot');
     let geloest = 0;
 
     symbole.forEach(symbol => {
-        let startX = 0, startY = 0;
+        let startMausX = 0, startMausY = 0;
         let ziehtGerade = false;
 
-        // Start beim Antippen (Maus & Touch)
         symbol.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
             if (symbol.dataset.fertig === 'true') return;
+            
             ziehtGerade = true;
             symbol.setPointerCapture(e.pointerId);
-            startX = e.clientX;
-            startY = e.clientY;
+            startMausX = e.clientX;
+            startMausY = e.clientY;
             symbol.style.zIndex = 50;
             symbol.style.transition = 'none';
         });
 
-        // Bewegung mit Finger oder Maus
         symbol.addEventListener('pointermove', (e) => {
             if (!ziehtGerade) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            symbol.style.transform = `translate(${dx}px, ${dy}px) scale(1.1)`;
+            const dx = e.clientX - startMausX;
+            const dy = e.clientY - startMausY;
+            symbol.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.15)`;
         });
 
-        // Loslassen und prüfen, ob es über dem richtigen Schatten liegt
         symbol.addEventListener('pointerup', (e) => {
             if (!ziehtGerade) return;
             ziehtGerade = false;
@@ -177,36 +163,36 @@
             schattenSlots.forEach(slot => {
                 if (slot.dataset.id === symbol.dataset.id) {
                     const slotRect = slot.getBoundingClientRect();
-                    // Prüfen, ob die Mitte des Symbols im Schatten-Feld liegt
+                    const toleranz = 15;
                     if (
-                        symMitteX > slotRect.left &&
-                        symMitteX < slotRect.right &&
-                        symMitteY > slotRect.top &&
-                        symMitteY < slotRect.bottom
+                        symMitteX > (slotRect.left - toleranz) &&
+                        symMitteX < (slotRect.right + toleranz) &&
+                        symMitteY > (slotRect.top - toleranz) &&
+                        symMitteY < (slotRect.bottom + toleranz)
                     ) {
                         treffer = true;
-                        // Symbol exakt in den Schatten setzen
-                        slot.innerHTML = '';
-                        symbol.style.transform = 'none';
-                        symbol.style.position = 'static';
+                        symbol.style.left = slot.style.left;
+                        symbol.style.top = slot.style.top;
+                        symbol.style.width = '8.5%';
+                        symbol.style.transform = 'translate(-50%, -50%)';
                         symbol.style.cursor = 'default';
+                        symbol.style.zIndex = 5;
                         symbol.dataset.fertig = 'true';
-                        slot.appendChild(symbol);
+                        slot.style.visibility = 'hidden';
 
                         geloest++;
                         if (geloest === 4) {
                             setTimeout(() => {
                                 document.getElementById('gewonnen-box').style.display = 'block';
-                            }, 300);
+                            }, 350);
                         }
                     }
                 }
             });
 
-            // Wenn daneben oder falscher Schatten -> sanft zurückgleiten
             if (!treffer) {
                 symbol.style.transition = 'transform 0.3s ease';
-                symbol.style.transform = 'translate(0px, 0px)';
+                symbol.style.transform = 'translate(-50%, -50%)';
                 symbol.style.zIndex = 10;
             }
         });
